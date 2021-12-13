@@ -1,0 +1,16 @@
+version: '3.7'
+
+services:
+  yandex2mqtt:
+    build: ./
+    container_name: yandex2mqtt
+    restart: always
+    init: true
+    volumes:
+      - ./config.js:/opt/yandex2mqtt/config.js
+      - ./db-storage:/opt/yandex2mqtt/db-storage
+    ports:
+      - "4433:4433"
+    environment:
+      - MQTT_USER
+      - MQTT_PASS
