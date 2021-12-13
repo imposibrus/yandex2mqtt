@@ -35,7 +35,7 @@ module.exports.devices = [
 
             for (const d of global.devices.filter(d => Array.isArray(d.meta.allowedUsers) && d.meta.allowedUsers.indexOf(userId) > -1)) {
                 r.payload.devices.push(d.getInfo());
-            };
+            }
             
             res.status(200).send(r);
         } catch (e) {
@@ -59,7 +59,7 @@ module.exports.query = [
         for (const d of req.body.devices) {
             const ldevice = global.devices.find(device => device.data.id == d.id);
             r.payload.devices.push(ldevice.getState());
-        };
+        }
 
         res.status(200).send(r);
     }
@@ -87,7 +87,7 @@ module.exports.action = [
             }
             
             r.payload.devices.push({id, capabilities});
-        };
+        }
 
         res.status(200).send(r);
     }

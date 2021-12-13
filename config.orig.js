@@ -6,9 +6,7 @@ module.exports = {
         password: 'password',
     },
 
-    https: {
-        privateKey: '/etc/letsencrypt/live/your.domain.ru/privkey.pem',
-        certificate: '/etc/letsencrypt/live/your.domain.ru/fullchain.pem',
+    http: {
         port: 4433,
     },
 

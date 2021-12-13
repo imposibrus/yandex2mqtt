@@ -1,13 +1,13 @@
 'use strict';
 
-const fs = require('fs');
 const path = require('path');
 /* */
 const {createLogger, format, transports} = require('winston');
-/* express and https */
+/* express and http */
 const ejs = require('ejs');
 const express = require('express');
 const app = express();
+const http = require('http');
 const https = require('https');
 /* parsers */
 const cookieParser = require('cookie-parser');
@@ -34,17 +34,19 @@ global.logger = createLogger({
         format.errors({stack: true}),
         format.timestamp(),
         format.printf(({level, message, timestamp, stack}) => {
-            return `${timestamp} ${level}: ${stack != undefined ? stack : message}`;
+            return `${timestamp} ${level}: ${stack !== undefined ? stack : message}`;
         }),
     ),
     transports: [
         new transports.Console({
-            silent: clArgv.indexOf('--log-info') == -1
+            silent: clArgv.indexOf('--log-info') === -1
         })
     ],
 });
 
-if (clArgv.indexOf('--log-error') > -1) global.logger.add(new transports.File({filename: 'log/error.log', level: 'error'}));
+if (clArgv.indexOf('--log-error') > -1) {
+    global.logger.add(new transports.File({filename: 'log/error.log', level: 'error'}));
+}
 
 /* */
 app.engine('ejs', ejs.__express);
@@ -92,15 +94,9 @@ app.post('/provider/v1.0/user/devices/query', r_user.query);
 app.post('/provider/v1.0/user/devices/action', r_user.action);
 app.post('/provider/v1.0/user/unlink', r_user.unlink);
 
-/* create https server */
-const privateKey = fs.readFileSync(config.https.privateKey, 'utf8');
-const certificate = fs.readFileSync(config.https.certificate, 'utf8');
-const credentials = {
-    key: privateKey,
-    cert: certificate,
-};
-const httpsServer = https.createServer(credentials, app);
-httpsServer.listen(config.https.port);
+/* create http server */
+const httpServer = http.createServer(app);
+httpServer.listen(config.http.port);
 
 /* cache devices from config to global */
 global.devices = [];
@@ -115,7 +111,7 @@ const subscriptions = [];
 global.devices.forEach(device => {
     device.data.custom_data.mqtt.forEach(mqtt => {
         const {instance, state: topic} = mqtt;
-        if (instance != undefined && topic != undefined) {
+        if (instance !== undefined && topic !== undefined) {
             subscriptions.push({deviceId: device.data.id, instance, topic});
         }
     });
@@ -126,13 +122,16 @@ global.mqttClient = mqtt.connect(`mqtt://${config.mqtt.host}`, {
     port: config.mqtt.port,
     username: config.mqtt.user,
     password: config.mqtt.password
+}).on('error', err => {
+    throw err;
 }).on('connect', () => { /* on connect event handler */
-    mqttClient.subscribe(subscriptions.map(pair => pair.topic));
+    global.mqttClient.subscribe(subscriptions.map(pair => pair.topic));
 }).on('offline', () => { /* on offline event handler */
-    /* */
+    global.logger.log('info', {message: `mqtt offline. exiting`});
+    process.exit(-1);
 }).on('message', (topic, message) => { /* on get message event handler */
     const subscription = subscriptions.find(sub => topic.toLowerCase() === sub.topic.toLowerCase());
-    if (subscription == undefined) return;
+    if (subscription === undefined) return;
 
     const {deviceId, instance} = subscription;
     const ldevice = global.devices.find(d => d.data.id == deviceId);
@@ -142,8 +141,8 @@ global.mqttClient = mqtt.connect(`mqtt://${config.mqtt.host}`, {
     Promise.all(config.notification.map(el => {
         let {skill_id, oauth_token, user_id} = el;
 
-        return new Promise((resolve, reject) => {
-            let req = https.request({
+        return new Promise(resolve => {
+            const req = https.request({
                 hostname: 'dialogs.yandex.net',
                 port: 443,
                 path: `/api/v1/skills/${skill_id}/callback/state`,
@@ -169,8 +168,8 @@ global.mqttClient = mqtt.connect(`mqtt://${config.mqtt.host}`, {
                     "user_id": `${user_id}`,
                     "devices": [{
                         id,
-                        capabilities: capabilities.filter(c => c.state.instance == instance),
-                        properties: properties.filter(p => p.state.instance == instance)
+                        capabilities: capabilities.filter(c => c.state.instance === instance),
+                        properties: properties.filter(p => p.state.instance === instance)
                     }],
                 }
             }));

@@ -5,7 +5,7 @@ function convertToYandexValue(val, actType) {
     switch(actType) {
         case 'range':
         case 'float': {
-            if (val == undefined) return 0.0;
+            if (val === undefined) return 0.0;
             try {
                 const value = parseFloat(val);
                 return isNaN(value) ? 0.0 : value;
@@ -16,8 +16,8 @@ function convertToYandexValue(val, actType) {
         }
         case 'toggle':
         case 'on_off': {
-            if (val == undefined) return false;
-            if (['true', 'on', '1'].indexOf(String(val).toLowerCase()) != -1) return true;
+            if (val === undefined) return false;
+            if (['true', 'on', '1'].indexOf(String(val).toLowerCase()) !== -1) return true;
             else return false;
         }
         default:
@@ -39,8 +39,8 @@ class Device {
                 mqtt: options.mqtt || [],
                 valueMapping: options.valueMapping || [],
             },
-            capabilities: (options.capabilities || []).map(c => Object.assign({}, c, {state: (c.state == undefined) ? this.initState(c) : c.state})),
-            properties: (options.properties || []).map(p => Object.assign({}, p, {state: (p.state == undefined) ? this.initState(p) : p.state})),
+            capabilities: (options.capabilities || []).map(c => Object.assign({}, c, {state: (c.state === undefined) ? this.initState(c) : c.state})),
+            properties: (options.properties || []).map(p => Object.assign({}, p, {state: (p.state === undefined) ? this.initState(p) : p.state})),
         };
         this.meta = {
             allowedUsers: options.allowedUsers || ['1'],
@@ -94,7 +94,7 @@ class Device {
     /* Find capability by type (and instance) */
     findCapability(type, instance) {
         const {capabilities} = this.data;
-        if (instance != undefined) {
+        if (instance !== undefined) {
             return capabilities.find(c => c.type === type && c.state.instance === instance);
         } else {
             return capabilities.find(c => c.type === type);
@@ -104,7 +104,7 @@ class Device {
     /* Find property by type (and instance) */
     findProperty(type, instance) {
         const {properties} = this.data;
-        if (instance != undefined) {
+        if (instance !== undefined) {
             return properties.find(p => p.type === type && p.state.instance === instance);
         } else {
             return properties.find(p => p.type === type);
@@ -124,15 +124,15 @@ class Device {
      * @param {*} y2m mapping direction (yandex to mqtt, mqtt to yandex)
      */
     getMappedValue(val, actType, y2m) {
-        const map = this.data.custom_data.valueMapping.find(m => m.type == actType);
-        if (map == undefined) return val;
+        const map = this.data.custom_data.valueMapping.find(m => m.type === actType);
+        if (map === undefined) return val;
         
         var from, to;
-        if (y2m == true) [from, to] = map.mapping;
+        if (y2m === true) [from, to] = map.mapping;
         else [to, from] = map.mapping;
         
         const mappedValue = to[from.indexOf(val)];
-        return (mappedValue != undefined) ? mappedValue : val;
+        return (mappedValue !== undefined) ? mappedValue : val;
     }
 
     getInfo() {
@@ -143,7 +143,7 @@ class Device {
     /* Get only needed for response device info (bun not full device defenition) */
     getState () {
         const {id, capabilities, properties} = this.data;
-        const device = {
+        return {
             id,
             capabilities: (() => {
                 return capabilities.filter(c => c.retrievable === true).map(c => {
@@ -161,9 +161,7 @@ class Device {
                     }
                 })
             })() || [],
-        }
-
-        return device;
+        };
     }
 
     /* Change device capability state and publish value to MQTT topic */
@@ -176,10 +174,10 @@ class Device {
         let topic;
         try {
             const capability = this.findCapability(type, instance);
-            if (capability == undefined) throw new Error(`Can't find capability '${type}' in device '${id}'`);
+            if (capability === undefined) throw new Error(`Can't find capability '${type}' in device '${id}'`);
             capability.state.value = value;
             topic = this.findTopicByInstance(instance);
-            if (topic == undefined) throw new Error(`Can't find set topic for '${type}' in device '${id}'`);
+            if (topic === undefined) throw new Error(`Can't find set topic for '${type}' in device '${id}'`);
             message = `${value}`;
         } catch(e) {              
             topic = false;
@@ -207,7 +205,7 @@ class Device {
 
         try {
             const cp = [].concat(capabilities, properties).find(cp => (cp.state.instance === instance));
-            if (cp == undefined) throw new Error(`Can't instance '${instance}' in device '${id}'`);
+            if (cp === undefined) throw new Error(`Can't instance '${instance}' in device '${id}'`);
 
             const actType = String(cp.type).split('.')[2];
             const value = this.getMappedValue(val, actType, false);
