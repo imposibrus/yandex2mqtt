@@ -126,10 +126,19 @@ global.mqttClient = mqtt.connect(`mqtt://${config.mqtt.host}`, {
 }).on('error', err => {
     throw err;
 }).on('connect', () => { /* on connect event handler */
-    global.mqttClient.subscribe(subscriptions.map(pair => pair.topic));
+    const topics = subscriptions.map(pair => pair.topic);
+
+    global.mqttClient.subscribe(topics);
 }).on('offline', () => { /* on offline event handler */
-    global.logger.log('info', {message: `mqtt offline. exiting`});
-    process.exit(-1);
+    global.logger.log('info', {message: `mqtt offline`});
+    setTimeout(() => {
+        if (!global.mqttClient.connected && !global.mqttClient.reconnecting) {
+            global.logger.log('info', {message: `reconnecting...`});
+            global.mqttClient.reconnect();
+        } else {
+            global.logger.log('info', {message: `reconnected`});
+        }
+    }, 100);
 }).on('message', (topic, message) => { /* on get message event handler */
     const subscription = subscriptions.find(sub => topic.toLowerCase() === sub.topic.toLowerCase());
     if (subscription === undefined) return;
@@ -162,8 +171,8 @@ global.mqttClient = mqtt.connect(`mqtt://${config.mqtt.host}`, {
                 global.logger.log('error', {message: `${error}`});
             });
             
-            let {id, capabilities, properties} = ldevice.getState();
-            req.write(JSON.stringify({
+            const {id, capabilities, properties} = ldevice.getState();
+            const response = {
                 "ts": Math.floor(Date.now() / 1000),
                 "payload": {
                     "user_id": `${user_id}`,
@@ -173,7 +182,9 @@ global.mqttClient = mqtt.connect(`mqtt://${config.mqtt.host}`, {
                         properties: properties.filter(p => p.state.instance === instance)
                     }],
                 }
-            }));
+            };
+
+            req.write(JSON.stringify(response));
 
             req.end();
 
