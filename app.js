@@ -121,7 +121,8 @@ global.devices.forEach(device => {
 global.mqttClient = mqtt.connect(`mqtt://${config.mqtt.host}`, {
     port: config.mqtt.port,
     username: config.mqtt.user,
-    password: config.mqtt.password
+    password: config.mqtt.password,
+    clientId: 'yandex2mqtt',
 }).on('error', err => {
     throw err;
 }).on('connect', () => { /* on connect event handler */
