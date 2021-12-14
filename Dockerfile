@@ -9,4 +9,4 @@ RUN npm ci --production --no-audit
 COPY . /opt/yandex2mqtt
 RUN ln -s /dev/stderr /opt/yandex2mqtt/log/error.log
 
-CMD npm start -- --log-info --log-error
+CMD npm start -- --log-info --log-error --unhandled-rejections=throw

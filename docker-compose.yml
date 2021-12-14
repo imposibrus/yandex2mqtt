@@ -14,3 +14,14 @@ services:
     environment:
       - MQTT_USER
       - MQTT_PASS
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.yandex2mqtt.rule=Host(`y2m.office.ziondev.ru`)"
+      - "traefik.http.routers.yandex2mqtt.service=yandex2mqtt-service"
+
+      - "traefik.http.routers.yandex2mqtt-tls.rule=Host(`y2m.office.ziondev.ru`)"
+      - "traefik.http.routers.yandex2mqtt-tls.tls=true"
+      - "traefik.http.routers.yandex2mqtt-tls.tls.certresolver=default"
+      - "traefik.http.routers.yandex2mqtt-tls.service=yandex2mqtt-service"
+
+      - "traefik.http.services.yandex2mqtt-service.loadbalancer.server.port=4433"
