@@ -165,20 +165,20 @@ class Device {
     }
 
     /* Change device capability state and publish value to MQTT topic */
-    setCapabilityState(val, type, instance) {
+    setCapabilityState(valueYandex, type, instance) {
         const {id} = this.data;
         const actType = String(type).split('.')[2];
-        const value = this.getMappedValue(val, actType, true);
+        const valueMqtt = this.getMappedValue(valueYandex, actType, true);
 
         let message;
         let topic;
         try {
             const capability = this.findCapability(type, instance);
             if (capability === undefined) throw new Error(`Can't find capability '${type}' in device '${id}'`);
-            capability.state.value = value;
+            capability.state.value = valueYandex;
             topic = this.findTopicByInstance(instance);
             if (topic === undefined) throw new Error(`Can't find set topic for '${type}' in device '${id}'`);
-            message = `${value}`;
+            message = `${valueMqtt}`;
         } catch(e) {              
             topic = false;
             logger.log('error', {message: `${e}`});
